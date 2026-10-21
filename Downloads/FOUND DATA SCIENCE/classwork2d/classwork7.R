@@ -16,3 +16,15 @@ long_data <- my_data %>%
   mutate(Groups = as.factor(Groups)) %>%
   drop_na(x) # Drops rows where 'x' is NA
 long_data
+
+#Step3
+ggplot(long_data, aes(x = Groups, y = y, fill = Groups)) +
+  geom_boxplot(alpha = 0.8) +
+  geom_jitter(width = 0.3, alpha = 0.4) + # Optional: shows individual data points
+  labs(
+    title = "Distribution of Values across Groups",
+    x = "Group Category",
+    y = "Value (y)") +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
