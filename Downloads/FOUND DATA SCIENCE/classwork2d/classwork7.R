@@ -6,3 +6,4 @@ hist(na.omit(my_data$x),
               main = "Histogram of X", 
               xlab = "Values", 
               col = "lightblue")
+#Step 2
