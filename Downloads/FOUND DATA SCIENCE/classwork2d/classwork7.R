@@ -28,3 +28,31 @@ ggplot(long_data, aes(x = Groups, y = y, fill = Groups)) +
   theme_minimal() +
   theme(legend.position = "bottom")
 
+#Step 4
+
+long_data_log <- long_data %>%
+  mutate(x_log2 = log2(x))
+
+ggplot(long_data_log, aes(x = x_log2, y = y, color = Groups)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) + 
+  facet_wrap(~ Groups, ncol = 4) +
+  labs(
+    title = "Group Relationships over Log2(X)",
+    x = "Log2(X)",
+    y = "Y Variable") +
+  theme_minimal()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
