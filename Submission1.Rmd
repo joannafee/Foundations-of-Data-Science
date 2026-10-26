@@ -185,6 +185,23 @@ ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
 #### Figure 2: The scatterplot shows the relationship between Maternal Age and WIPI2 Gene Expression. The direction of the plot shows a positive relationship between the variables, but it is very weak. The strength of association is weak as well as the data points are scattered around the line. The gray shaded area is the 95% confidence interval. The scatterplot does not show a stronf vivual association between the Gene Expression and Maternal Age. 
 
 ```{r}
+# Boxplot of WIPI2 gene expression by pregnancy outcome and asthma
+ggplot(
+  PlotData,
+  aes(x = preg_preeclampsia, y = gene_expression)) +
+  geom_boxplot(
+    fill = "purple",
+    alpha = 0.6,
+    na.rm = TRUE) +
+  facet_wrap(~ mat_asthma) +
+  labs(
+    title = "WIPI2 Gene Expression by Pregnancy Outcome and Maternal Asthma",
+    x = "Pregnancy Outcome",
+    y = "WIPI2 Gene Expression",
+    caption = "Panels represent maternal asthma status (0 = healthy, 1 = asthmatic).") +
+  theme_classic()
+```
+
 ```
 
 
