@@ -182,7 +182,9 @@ ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
     y = "WIPI2 Gene Expression") +
   theme_classic()
 ```
+#### Figure 2: The scatterplot shows the relationship between Maternal Age and WIPI2 Gene Expression. The direction of the plot shows a positive relationship between the variables, but it is very weak. The strength of association is weak as well as the data points are scattered around the line. The gray shaded area is the 95% confidence interval. The scatterplot does not show a stronf vivual association between the Gene Expression and Maternal Age. 
 
+```{r}
 ```
 
 
