@@ -185,7 +185,29 @@ ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
 #### Figure 2: The scatterplot shows the relationship between Maternal Age and WIPI2 Gene Expression. The direction of the plot shows a positive relationship between the variables, but it is very weak. The strength of association is weak as well as the data points are scattered around the line. The gray shaded area is the 95% confidence interval. The scatterplot does not show a stronf vivual association between the Gene Expression and Maternal Age. 
 
 ```{r}
-# Boxplot of WIPI2 gene expression by pregnancy outcome and asthma
+#deriving categories from a continuous variable - BMI
+Covar <- Covar %>%
+  mutate(
+    BMI_category = cut(
+      mat_BMI,
+      breaks = c(-Inf, 18.5, 25, 30, Inf),
+      labels = c(
+        "Underweight",
+        "Normal weight",
+        "Overweight",
+        "Obesity"),
+      right = FALSE))
+# Check the new BMI categories
+Covar %>%
+  count(BMI_category)
+
+#adding the new column to our original data set. 
+PlotData <- Covar %>%
+  inner_join(WIPI2_long, by = "geoID")
+```
+
+```{r}
+# Boxplot of WIPI2 gene expression by pregnancy outcome and BMI category
 ggplot(
   PlotData,
   aes(x = preg_preeclampsia, y = gene_expression)) +
@@ -193,15 +215,17 @@ ggplot(
     fill = "purple",
     alpha = 0.6,
     na.rm = TRUE) +
-  facet_wrap(~ mat_asthma) +
+  facet_wrap(~ BMI_category) +
   labs(
-    title = "WIPI2 Gene Expression by Pregnancy Outcome and Maternal Asthma",
+    title = "WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
     x = "Pregnancy Outcome",
-    y = "WIPI2 Gene Expression",
-    caption = "Panels represent maternal asthma status (0 = healthy, 1 = asthmatic).") +
+    y = "WIPI2 Gene Expression") +
   theme_classic()
 ```
-#### Figure 3: For Normal Pregnancy the WIPI2 Expression is slightly higher among participants with asthma. Preeclampsia expression appears very similar in those with and without asthma. 
+
+```{r}
+
+```
 
 ```{r}
 
