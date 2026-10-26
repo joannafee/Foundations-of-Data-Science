@@ -163,6 +163,7 @@ ggplot(PlotData, aes(x = gene_expression)) +
     y = "Number of Participants") +
   theme_classic()
 ```
+#### Figure 1: Histogram shows the distribution of WIPI2 gene expression across the 157 participants. The center of the histogram lies around the 8.1-8.2 value. The shape is relatively normally distributed with a rough bell shape, and one distinct peak. Spread is from 7.75 to 8.53.
 
 ```{r}
 
