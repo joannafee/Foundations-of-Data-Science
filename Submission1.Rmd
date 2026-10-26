@@ -1,0 +1,152 @@
+---
+title: 'Submission 1'
+author: "Joanna Feliciano"
+date: "October 25, 2026"
+output: pdf_document
+---
+
+```{r}
+#Loading necessary library
+library(tidyverse)
+```
+
+```{r}
+#Reading the Data into R --> using tidyverse
+
+Covar <- read_csv("~/Downloads/FOUND DATA SCIENCE/classwork2d/GSE85307_covar-1.csv")
+GeneExpression <- read_csv("~/Downloads/FOUND DATA SCIENCE/classwork2d/GSE85307_geneExpression.csv")
+GeneNames <- read_csv("~/Downloads/FOUND DATA SCIENCE/classwork2d/GSE85307_geneNames.csv")
+```
+The Covar file contains variables about each participant: maternal age, pregnancy outcome, Gestation, Blood Draw Date, Microarray Batch Number, BMI, Vitamin D levels, and asthma. 
+The Gene Expression file contains measurements of 500 gene probes across 157 samples. Each roe represents a gene probe. Each sample column contains expression measurements with the first column being probe IDs. 
+The Gene Names file connects the probe IDs to gene names. For example, a probe ID can be linked to a name such as PTX3.
+
+```{r Cleaning-Age}
+#picking out just the numeric in the age column.
+Covar <- Covar %>%
+  #mutate is used to change the column within the data set. 
+  mutate(
+    #str_remove is removing the "age_years: "
+    mat_age_yrs = str_remove(mat_age_yrs, "^age_years:\\s*"),
+    #as.numeric is specifying that the remaining value will be a number,not a character.
+    mat_age_yrs = as.numeric(mat_age_yrs))
+
+#making sure the cleaning created a numeric and removed the characters. 
+head(Covar$mat_age_yrs)
+class(Covar$mat_age_yrs)
+```
+
+```{r Cleaning All Variables}
+#Continuing with remaining variables. 
+
+#Condition
+Covar <- Covar %>%
+  mutate(
+    preg_preeclampsia = str_remove(preg_preeclampsia,"^pregnancy_condition:\\s*"),
+    preg_preeclampsia = factor(preg_preeclampsia))
+#Delivery
+Covar <- Covar %>%
+  mutate(
+    delivery_gestAge_wks = str_remove(delivery_gestAge_wks, "^gestation_weeks:\\s*"),
+    delivery_gestAge_wks = as.numeric(delivery_gestAge_wks))
+#Sample Collection
+Covar <- Covar %>%
+  mutate(
+    sampleCollection_gestAge_wks = str_remove(sampleCollection_gestAge_wks,
+      "^blood_draw_at_gestation_week:\\s*"),
+    sampleCollection_gestAge_wks =
+      as.numeric(sampleCollection_gestAge_wks))
+#Batch MicroArray
+Covar <- Covar %>%
+  mutate(
+    batch_Microarray = str_remove(batch_Microarray,
+      "^microarray_hybridization_date:\\s*"),
+    batch_Microarray = as.factor(batch_Microarray))
+#BMI
+Covar <- Covar %>%
+  mutate(
+    mat_BMI = str_remove(mat_BMI, "^bmi_kg/m2:\\s*"),
+    mat_BMI = as.numeric(mat_BMI))
+#Vitamin D
+Covar <- Covar %>%
+  mutate(
+    mat_vitD = str_remove(mat_vitD,
+      "^vitamind_25\\(0h\\)_ng/ml_whole_blood_baseline:\\s*"),
+    mat_vitD = as.numeric(mat_vitD))
+#Asthma
+Covar <- Covar %>%
+  mutate(
+    mat_asthma = str_remove(mat_asthma, "asthma_0=healthy_1=asthmatic:\\s*"),
+    mat_asthma = as.factor(mat_asthma))
+```
+
+```{r}
+#Summary of Cleaned Variables. 
+head(Covar %>% select(mat_age_yrs, preg_preeclampsia, delivery_gestAge_wks, sampleCollection_gestAge_wks,
+                      batch_Microarray, mat_BMI, mat_vitD, mat_asthma))
+```
+
+```{r}
+# Check the first few sample IDs in the gene expression data
+names(GeneExpression)[1:10]
+
+# Check the geoID values in the covariate data
+head(Covar$geoID)
+
+# Check the first column of the gene expression data
+head(GeneExpression[[1]])
+```
+
+
+```{r}
+#Our first column is unnamed, so we will identify it. 
+GeneExpression <- GeneExpression %>%
+  rename(PROBEID = 1)
+
+#we want to extract the geoID from both csv files. 
+covar_ids <- Covar$geoID
+expression_ids <- names(GeneExpression)[-1]
+
+# Count how many sample IDs match
+sum(covar_ids %in% expression_ids)
+
+# Check whether any covariate sample IDs are missing from gene expression
+setdiff(covar_ids, expression_ids)
+
+# Check how many gene-expression sample IDs match the covariate data
+sum(expression_ids %in% covar_ids)
+```
+
+```{r}
+#selecting a gene to observe. 
+#we are looking for the PROBEID that goes along with selected gene. WIPI2
+My_Gene <- GeneNames %>%
+  filter(GENE == "WIPI2")
+
+# Check that the probe ID exists in the expression data
+GeneExpression %>%
+  filter(PROBEID %in% My_Gene$PROBEID)
+#the output will show that the gene is present in all 157 observations. 
+```
+
+```{r}
+# Extract expression values for the selected gene
+WIPI2 <- GeneExpression %>%
+  filter(PROBEID == 8131303)
+
+# Change the data from wide format to long format
+# Each row will represent one sample
+WIPI2_long <- WIPI2 %>%
+  pivot_longer(
+    cols = -PROBEID,
+    names_to = "geoID",
+    values_to = "gene_expression")
+
+# Match gene expression to participant information using geoID
+PlotData <- Covar %>%
+  inner_join(WIPI2_long, by = "geoID")
+
+# Check the resulting data
+PlotData
+```
+
