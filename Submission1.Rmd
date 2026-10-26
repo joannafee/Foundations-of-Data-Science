@@ -201,6 +201,9 @@ ggplot(
     caption = "Panels represent maternal asthma status (0 = healthy, 1 = asthmatic).") +
   theme_classic()
 ```
+#### Figure 3: For Normal Pregnancy the WIPI2 Expression is slightly higher among participants with asthma. Preeclampsia expression appears very similar in those with and without asthma. 
+
+```{r}
 
 ```
 
