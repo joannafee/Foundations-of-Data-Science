@@ -13,9 +13,9 @@ library(tidyverse)
 ```{r}
 #Reading the Data into R --> using tidyverse
 
-Covar <- read_csv("~/Downloads/FOUND DATA SCIENCE/classwork2d/GSE85307_covar-1.csv")
-GeneExpression <- read_csv("~/Downloads/FOUND DATA SCIENCE/classwork2d/GSE85307_geneExpression.csv")
-GeneNames <- read_csv("~/Downloads/FOUND DATA SCIENCE/classwork2d/GSE85307_geneNames.csv")
+Covar <- read_csv("GSE85307_covar-1.csv")
+GeneExpression <- read_csv("GSE85307_geneExpression.csv")
+GeneNames <- read_csv("GSE85307_geneNames.csv")
 ```
 The Covar file contains variables about each participant: maternal age, pregnancy outcome, Gestation, Blood Draw Date, Microarray Batch Number, BMI, Vitamin D levels, and asthma. 
 The Gene Expression file contains measurements of 500 gene probes across 157 samples. Each roe represents a gene probe. Each sample column contains expression measurements with the first column being probe IDs. 
@@ -147,13 +147,26 @@ PlotData <- Covar %>%
   inner_join(WIPI2_long, by = "geoID")
 
 # Check the resulting data
-PlotData
+head(PlotData)
 ```
 
 ```{r}
-#more testing because 
+# Histogram of WIPI2 gene expression
+ggplot(PlotData, aes(x = gene_expression)) +
+  geom_histogram(
+    bins = 20,
+    fill = "purple",
+    color = "white") +
+  labs(
+    title = "Distribution of WIPI2 Gene Expression",
+    x = "WIPI2 Gene Expression",
+    y = "Number of Participants") +
+  theme_classic()
 ```
 
+```{r}
+
+```
 
 
 
