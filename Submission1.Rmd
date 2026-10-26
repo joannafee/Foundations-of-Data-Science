@@ -166,6 +166,22 @@ ggplot(PlotData, aes(x = gene_expression)) +
 #### Figure 1: Histogram shows the distribution of WIPI2 gene expression across the 157 participants. The center of the histogram lies around the 8.1-8.2 value. The shape is relatively normally distributed with a rough bell shape, and one distinct peak. Spread is from 7.75 to 8.53.
 
 ```{r}
+#Scatterplot of maternal age and My_Gene Expression
+ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
+  geom_point(
+    color = "purple",
+    alpha = 0.7,
+    size = 2) +
+  geom_smooth(
+    method = "lm",
+    se = TRUE,
+    color = "black") +
+  labs(
+    title = "Maternal Age and WIPI2 Gene Expression",
+    x = "Maternal Age (years)",
+    y = "WIPI2 Gene Expression") +
+  theme_classic()
+```
 
 ```
 
