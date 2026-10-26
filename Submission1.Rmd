@@ -158,7 +158,7 @@ ggplot(PlotData, aes(x = gene_expression)) +
     fill = "purple",
     color = "white") +
   labs(
-    title = "Distribution of WIPI2 Gene Expression",
+    title = "Figure 1. Distribution of WIPI2 Gene Expression",
     x = "WIPI2 Gene Expression",
     y = "Number of Participants") +
   theme_classic()
@@ -177,7 +177,7 @@ ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
     se = TRUE,
     color = "black") +
   labs(
-    title = "Maternal Age and WIPI2 Gene Expression",
+    title = "Figure 2. Maternal Age and WIPI2 Gene Expression",
     x = "Maternal Age (years)",
     y = "WIPI2 Gene Expression") +
   theme_classic()
@@ -217,14 +217,16 @@ ggplot(
     na.rm = TRUE) +
   facet_wrap(~ BMI_category) +
   labs(
-    title = "WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
+    title = "Figure 3. WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
     x = "Pregnancy Outcome",
     y = "WIPI2 Gene Expression") +
   theme_classic()
 ```
 
 ```{r}
-
+# Check participant counts for the boxplot
+PlotData %>%
+  count(BMI_category, preg_preeclampsia)
 ```
 
 ```{r}
