@@ -158,10 +158,19 @@ ggplot(PlotData, aes(x = gene_expression)) +
     fill = "purple",
     color = "white") +
   labs(
-    title = "Figure 1. Distribution of WIPI2 Gene Expression",
+    title = "Distribution of WIPI2 Gene Expression",
     x = "WIPI2 Gene Expression",
-    y = "Number of Participants") +
-  theme_classic()
+    y = "Number of Participants",
+    caption = paste("Figure 1. Distribution of WIPI2 gene expression among",
+    "157 maternal samples. Bars represent the number of",
+    "participants within each gene-expression interval.")) +
+  theme_classic() +
+  theme(
+  plot.caption = element_text(
+    size = 10,
+    hjust = 0
+  )
+)
 ```
 #### Figure 1: Histogram shows the distribution of WIPI2 gene expression across the 157 participants. The center of the histogram lies around the 8.1-8.2 value. The shape is relatively normally distributed with a rough bell shape, and one distinct peak. Spread is from 7.75 to 8.53.
 
@@ -177,10 +186,22 @@ ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
     se = TRUE,
     color = "black") +
   labs(
-    title = "Figure 2. Maternal Age and WIPI2 Gene Expression",
+    title = "Maternal Age and WIPI2 Gene Expression",
     x = "Maternal Age (years)",
-    y = "WIPI2 Gene Expression") +
-  theme_classic()
+    y = "WIPI2 Gene Expression",    
+    caption = paste("Figure 2. Association between maternal age and WIPI2 gene expression.",
+  "Each point represents one participant. The black line represents",
+  "the fitted linear regression, and the gray shaded region represents",
+  "the 95% confidence interval."
+)) +
+  theme_classic() +
+    theme(
+    plot.caption = element_text(
+      size = 10,
+      hjust = 0
+    ),
+    plot.caption.position = "plot"
+  )
 ```
 #### Figure 2: The scatterplot shows the relationship between Maternal Age and WIPI2 Gene Expression. The direction of the plot shows a positive relationship between the variables, but it is very weak. The strength of association is weak as well as the data points are scattered around the line. The gray shaded area is the 95% confidence interval. The scatterplot does not show a stronf vivual association between the Gene Expression and Maternal Age. 
 
@@ -217,10 +238,20 @@ ggplot(
     na.rm = TRUE) +
   facet_wrap(~ BMI_category) +
   labs(
-    title = "Figure 3. WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
+    title = "WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
     x = "Pregnancy Outcome",
-    y = "WIPI2 Gene Expression") +
-  theme_classic()
+    y = "WIPI2 Gene Expression",
+    caption = paste("Figure 3. WIPI2 gene expression by pregnancy outcome and maternal BMI category.",
+    "Boxes represent the interquartile range, center lines indicate medians, and whiskers show the spread of the data.",
+    "BMI categories were derived from maternal BMI.")) +
+  theme_classic() +
+      theme(
+    plot.caption = element_text(
+      size = 10,
+      hjust = 0
+    ),
+    plot.caption.position = "plot"
+  )
 ```
 
 ```{r}
