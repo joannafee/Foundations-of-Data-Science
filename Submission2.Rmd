@@ -254,258 +254,140 @@ ggplot(
         hjust = 0),
       plot.caption.position = "plot")
 ```
-
 ```{r}
-#Selecting the second gene
-My_ProbeID2 <- GeneNames %>%
-  filter(GENE == "JAM2") %>%
-  pull(PROBEID)
-#Finding the gene expression data using the matched probe ID
-My_Gene_Expression2 <- GeneExpression %>%
-  filter(PROBEID %in% My_ProbeID2)
-```
-
-```{r}
-JAM2 <- GeneExpression %>%
-  filter(PROBEID %in% My_ProbeID2)
-
-JAM2_long <- JAM2 %>%
+#creating a data frame that holds our covariate and categoricals. 
+#Convert gene expression data from wide to long format
+GeneExpression_long <- GeneExpression %>%
   pivot_longer(
     cols = -PROBEID,
     names_to = "geoID",
     values_to = "gene_expression")
-
-PlotData_JAM2 <- Covar %>%
-  inner_join(JAM2_long, by = "geoID")
-```
-
-
-```{r}
-#Histogram of Gene2
-ggplot(PlotData_JAM2, aes(x = gene_expression)) +
-geom_histogram(
-      bins = 20,
-      fill = "darkorange",
-      color = "white") +
-    labs(
-        title = "Distribution of JAM2 Gene Expression",
-        x = "JAM2 Gene Expression",
-        y = "Number of Participants",
-    caption = paste("Figure 1. Distribution of JAM2 gene expression among",
-                  "157 maternal samples.\n","Bars represent the number of",
-                  "participants within each gene-expression interval.")) +
-theme_classic() +
-    theme(
-        plot.caption = element_text(
-        size = 10,
-        hjust = 0))
+#combing the three data sets
+CombinedData <- GeneExpression_long %>%
+  inner_join(GeneNames, by = "PROBEID") %>%
+  inner_join(Covar, by = "geoID")
 ```
 
 ```{r}
-#Scatterplot of maternal age and JAM2 Expression
-ggplot(PlotData_JAM2, aes(x = mat_age_yrs, y = gene_expression)) +
-  geom_point(
-    color = "darkorange",
-    alpha = 0.5,
-    size = 2) +
-  geom_smooth(
-    method = "lm",
-    se = TRUE,
-    color = "black") +
-  labs(
-    title = "Maternal Age and JAM2 Gene Expression",
-    x = "Maternal Age (years)",
-    y = "JAM2 Gene Expression",
-  caption = paste("Figure 2. Association between maternal age and JAM2 gene expression.",
-                "Each point represents one\n", "participant. The black line represents",
-                "the fitted linear regression, and the gray region represents the\n",
-                "95% confidence interval.")) +
-  theme_classic() +
-    theme(
-      plot.caption = element_text(
-      size = 10,
-      hjust = 0),
-      plot.caption.position = "plot")
+My_ProbeIDs <- CombinedData %>%
+  filter(GENE %in% c("JAM2", "PRICKLE2")) %>%
+  distinct(GENE, PROBEID)
 ```
 
 ```{r}
-ggplot(
-    PlotData_JAM2,
-      aes(x = preg_preeclampsia, y = gene_expression)) +
+#Function Creation
+Gene_Plot_Function <- function(data,
+                               genes,
+                               continuous_var,
+                               categorical_vars) {
+
+#Identify the probe IDs for my two newly selected genes
+  My_ProbeIDs <- data %>%
+    filter(GENE %in% genes) %>%
+    distinct(GENE, PROBEID)
+
+#Extract gene expression data for the two newly selected genes
+  PlotData <- data %>%
+    inner_join(My_ProbeIDs, by = c("GENE", "PROBEID"))
+
+#Create an empty list to store all plots
+  All_Plots <- list()
+
+#looping the plotting instructions for each gene
+  for (gene in genes) {
+#Assign a color to each gene #Claude helped with figuring out how to make each gene its own color. 
+    gene_color <- if (gene == "JAM2") {
+      "darkorange"
+    } else if (gene == "PRICKLE2") {
+      "forestgreen"
+    }
+    #one gene at a time
+    GeneData <- PlotData %>%
+      filter(GENE == gene)
+
+    #HISTOGRAM: Distribution of gene expression
+    Histogram <- ggplot(GeneData, aes(x = gene_expression)) +
+      geom_histogram(
+        bins = 20,
+        fill = gene_color,
+        color = "white") +
+      labs(
+        title = paste("Distribution of", gene, "Gene Expression"),
+        x = paste(gene, "Gene Expression"),
+        y = "Number of Participants") +
+      theme_classic()
+    
+    # SCATTERPLOT: Maternal age and gene expression
+    Scatterplot <- ggplot(
+      GeneData,
+      aes(x = .data[[continuous_var]], y = gene_expression)) +
+      geom_point(
+        color = gene_color,
+        alpha = 0.5,
+        size = 2) +
+      geom_smooth(
+        method = "lm",
+        se = TRUE,
+        color = "black") +
+      labs(
+        title = paste("Maternal Age and", gene, "Gene Expression"),
+        x = "Maternal Age (years)",
+        y = paste(gene, "Gene Expression")) +
+      theme_classic()
+
+    # BOXPLOT: Gene expression by pregnancy outcome and BMI category
+    Boxplot <- ggplot(
+      GeneData,
+      aes(
+        x = .data[[categorical_vars[1]]],
+        y = gene_expression)) +
       geom_boxplot(
-        fill = "darkorange",
+        fill = gene_color,
         alpha = 0.6,
         na.rm = TRUE) +
-        facet_wrap(~ BMI_category) +
-#geom_jitter used to represent data better by showing amount of data points. 
       geom_jitter(
         width = 0.2,
         alpha = 0.4,
         na.rm = TRUE) +
-      facet_wrap(~ BMI_category) +
-      labs(title = "JAM2 Gene Expression by Pregnancy Outcome and BMI Category",
-            x = "Pregnancy Outcome",
-            y = "JAM2 Gene Expression",
-            caption = paste("Figure 3. JAM2 gene expression by pregnancy outcome and maternal BMI category.", "Boxes represent\n", "the interquartile range, center lines indicate medians, and whiskers show the spread of the data.\n", "BMI categories were derived from maternal BMI.")) +
-      theme_classic() +
-        theme(
-        plot.caption = element_text(
-        size = 10,
-        hjust = 0),
-      plot.caption.position = "plot")
+      facet_wrap(vars(.data[[categorical_vars[2]]])) +
+      labs(
+        title = paste(
+          gene,
+          "Gene Expression by Pregnancy Outcome and BMI Category"),
+        x = "Pregnancy Outcome",
+        y = paste(gene, "Gene Expression")) +
+      theme_classic()
+
+    # Store the three plots for each gene
+    All_Plots[[gene]] <- list(
+      Histogram = Histogram,
+      Scatterplot = Scatterplot,
+      Boxplot = Boxplot)
+
+    # Display the three plots
+    print(Histogram)
+    print(Scatterplot)
+    print(Boxplot)}
+
+  # Return all plots
+  return(All_Plots)}
+```
+
+```{r}
+JAM2_PRICKLE2_Plots <- Gene_Plot_Function(
+  data = CombinedData,
+  genes = c("JAM2", "PRICKLE2"),
+  continuous_var = "mat_age_yrs",
+  categorical_vars = c("preg_preeclampsia", "BMI_category"))
 ```
 
 ```{r}
 
 ```
 
-
-
-```{r}
-#Selecting the third gene
-My_ProbeID3 <- GeneNames %>%
-  filter(GENE == "PRICKLE2") %>%
-  pull(PROBEID)
-#Finding the gene expression data using the matched probe ID
-My_Gene_Expression3 <- GeneExpression %>%
-  filter(PROBEID %in% My_ProbeID3)
-```
-
-```{r}
-PRICKLE2 <- GeneExpression %>%
-  filter(PROBEID %in% My_ProbeID3)
-
-PRICKLE2_long <- PRICKLE2 %>%
-  pivot_longer(
-    cols = -PROBEID,
-    names_to = "geoID",
-    values_to = "gene_expression")
-
-PlotData_PRICKLE2 <- Covar %>%
-  inner_join(PRICKLE2_long, by = "geoID")
-```
-
-```{r}
-#Histogram of Gene 3
-ggplot(PlotData_PRICKLE2, aes(x = gene_expression)) +
-geom_histogram(
-      bins = 20,
-      fill = "forestgreen",
-      color = "white") +
-    labs(
-        title = "Distribution of PRICKLE2 Gene Expression",
-        x = "PRICKLE2 Gene Expression",
-        y = "Number of Participants",
-    caption = paste("Figure 1. Distribution of PRICKLE2 gene expression among",
-                  "157 maternal samples.\n","Bars represent the number of",
-                  "participants within each gene-expression interval.")) +
-theme_classic() +
-    theme(
-        plot.caption = element_text(
-        size = 10,
-        hjust = 0))
-```
-
-```{r}
-#Scatterplot of maternal age and PRICKLE2 Expression
-ggplot(PlotData_PRICKLE2, aes(x = mat_age_yrs, y = gene_expression)) +
-  geom_point(
-    color = "forestgreen",
-    alpha = 0.5,
-    size = 2) +
-  geom_smooth(
-    method = "lm",
-    se = TRUE,
-    color = "black") +
-  labs(
-    title = "Maternal Age and PRICKLE2 Gene Expression",
-    x = "Maternal Age (years)",
-    y = "PRICKLE2 Gene Expression",
-  caption = paste("Figure 2. Association between maternal age and PRICKLE2 gene expression.",
-                "Each point represents one\n", "participant. The black line represents",
-                "the fitted linear regression, and the gray region represents the\n",
-                "95% confidence interval.")) +
-  theme_classic() +
-    theme(
-      plot.caption = element_text(
-      size = 10,
-      hjust = 0),
-      plot.caption.position = "plot")
-```
-
-
-```{r}
-ggplot(
-    PlotData_PRICKLE2,
-      aes(x = preg_preeclampsia, y = gene_expression)) +
-      geom_boxplot(
-        fill = "forestgreen",
-        alpha = 0.6,
-        na.rm = TRUE) +
-        facet_wrap(~ BMI_category) +
-#geom_jitter used to represent data better by showing amount of data points. 
-      geom_jitter(
-        width = 0.2,
-        alpha = 0.4,
-        na.rm = TRUE) +
-      facet_wrap(~ BMI_category) +
-      labs(title = "PRICKLE2 Gene Expression by Pregnancy Outcome and BMI Category",
-            x = "Pregnancy Outcome",
-            y = "PRICKLE2 Gene Expression",
-            caption = paste("Figure 3. PRICKLE2 gene expression by pregnancy outcome and maternal BMI category.", "Boxes represent\n", "the interquartile range, center lines indicate medians, and whiskers show the spread of the data.\n", "BMI categories were derived from maternal BMI.")) +
-      theme_classic() +
-        theme(
-        plot.caption = element_text(
-        size = 10,
-        hjust = 0),
-      plot.caption.position = "plot")
-```
-
-
 ```{r}
 
 ```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
-
-```{r}
-
-```
-
 
 
 
