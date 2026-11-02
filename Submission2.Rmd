@@ -120,19 +120,19 @@ sum(expression_ids %in% covar_ids)
 ```{r}
 #selecting a gene to observe. 
 #we are looking for the PROBEID that goes along with selected gene. WIPI2
-My_Gene <- GeneNames %>%
-  filter(GENE == "WIPI2")
-
-# Check that the probe ID exists in the expression data
-GeneExpression %>%
-  filter(PROBEID %in% My_Gene$PROBEID)
-#the output will show that the gene is present in all 157 observations. 
+My_ProbeID <- GeneNames %>%
+  filter(GENE == "WIPI2") %>%
+  #pull is used to extract just the probeid from the gene we want 
+  pull(PROBEID)
+#Finding the gene expression data using the matched probe ID
+My_Gene_Expression <- GeneExpression %>%
+  filter(PROBEID %in% My_ProbeID)
 ```
 
 ```{r}
 # Extract expression values for the selected gene
 WIPI2 <- GeneExpression %>%
-  filter(PROBEID == 8131303)
+  filter(PROBEID %in% My_ProbeID)
 
 # Change the data from wide format to long format
 # Each row will represent one sample
@@ -145,9 +145,6 @@ WIPI2_long <- WIPI2 %>%
 # Match gene expression to participant information using geoID
 PlotData <- Covar %>%
   inner_join(WIPI2_long, by = "geoID")
-
-# Check the resulting data, make sure its clean and there are no NA values. 
-PlotData
 ```
 
 ```{r}
@@ -240,6 +237,7 @@ ggplot(
         alpha = 0.6,
         na.rm = TRUE) +
         facet_wrap(~ BMI_category) +
+#geom_jitter used to represent data better by showing amount of data points. 
       geom_jitter(
         width = 0.2,
         alpha = 0.4,
@@ -248,9 +246,7 @@ ggplot(
       labs(title = "WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
             x = "Pregnancy Outcome",
             y = "WIPI2 Gene Expression",
-            caption = paste("Figure 3. WIPI2 gene expression by pregnancy outcome and maternal BMI category.",
-            "Boxes represent\n", "the interquartile range, center lines indicate medians, 
-            and whiskers show the spread of the data.\n", "BMI categories were derived from maternal BMI.")) +
+            caption = paste("Figure 3. WIPI2 gene expression by pregnancy outcome and maternal BMI category.", "Boxes represent\n", "the interquartile range, center lines indicate medians, and whiskers show the spread of the data.\n", "BMI categories were derived from maternal BMI.")) +
       theme_classic() +
         theme(
         plot.caption = element_text(
@@ -260,6 +256,53 @@ ggplot(
 ```
 
 ```{r}
+#Selecting the second gene
+My_ProbeID2 <- GeneNames %>%
+  filter(GENE == "JAM2") %>%
+  pull(PROBEID)
+#Finding the gene expression data using the matched probe ID
+My_Gene_Expression2 <- GeneExpression %>%
+  filter(PROBEID %in% My_ProbeID2)
+```
+
+```{r}
+JAM2 <- GeneExpression %>%
+  filter(PROBEID %in% My_ProbeID2)
+
+JAM2_long <- JAM2 %>%
+  pivot_longer(
+    cols = -PROBEID,
+    names_to = "geoID",
+    values_to = "gene_expression")
+
+PlotData_JAM2 <- Covar %>%
+  inner_join(JAM2_long, by = "geoID")
+```
+
+
+```{r}
+#Histogram of Gene2
+ggplot(PlotData_JAM2, aes(x = gene_expression)) +
+geom_histogram(
+      bins = 20,
+      fill = "darkorange",
+      color = "white") +
+    labs(
+        title = "Distribution of JAM2 Gene Expression",
+        x = "JAM2 Gene Expression",
+        y = "Number of Participants",
+    caption = paste("Figure 1. Distribution of JAM2 gene expression among",
+                  "157 maternal samples.\n","Bars represent the number of",
+                  "participants within each gene-expression interval.")) +
+theme_classic() +
+    theme(
+        plot.caption = element_text(
+        size = 10,
+        hjust = 0))
+```
+
+```{r}
+
 
 ```
 
@@ -270,5 +313,108 @@ ggplot(
 ```{r}
 
 ```
+
+
+
+```{r}
+#Selecting the third gene
+My_ProbeID3 <- GeneNames %>%
+  filter(GENE == "PRICKLE2") %>%
+  pull(PROBEID)
+#Finding the gene expression data using the matched probe ID
+My_Gene_Expression3 <- GeneExpression %>%
+  filter(PROBEID %in% My_ProbeID3)
+```
+
+```{r}
+PRICKLE2 <- GeneExpression %>%
+  filter(PROBEID %in% My_ProbeID3)
+
+PRICKLE2_long <- PRICKLE2 %>%
+  pivot_longer(
+    cols = -PROBEID,
+    names_to = "geoID",
+    values_to = "gene_expression")
+
+PlotData_PRICKLE2 <- Covar %>%
+  inner_join(PRICKLE2_long, by = "geoID")
+```
+
+```{r}
+#Histogram of Gene 3
+ggplot(PlotData_PRICKLE2, aes(x = gene_expression)) +
+geom_histogram(
+      bins = 20,
+      fill = "forestgreen",
+      color = "white") +
+    labs(
+        title = "Distribution of PRICKLE2 Gene Expression",
+        x = "PRICKLE2 Gene Expression",
+        y = "Number of Participants",
+    caption = paste("Figure 1. Distribution of PRICKLE2 gene expression among",
+                  "157 maternal samples.\n","Bars represent the number of",
+                  "participants within each gene-expression interval.")) +
+theme_classic() +
+    theme(
+        plot.caption = element_text(
+        size = 10,
+        hjust = 0))
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
 
 
