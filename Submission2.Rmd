@@ -302,8 +302,30 @@ theme_classic() +
 ```
 
 ```{r}
-
-
+#Scatterplot of maternal age and JAM2 Expression
+ggplot(PlotData_JAM2, aes(x = mat_age_yrs, y = gene_expression)) +
+  geom_point(
+    color = "darkorange",
+    alpha = 0.5,
+    size = 2) +
+  geom_smooth(
+    method = "lm",
+    se = TRUE,
+    color = "black") +
+  labs(
+    title = "Maternal Age and JAM2 Gene Expression",
+    x = "Maternal Age (years)",
+    y = "JAM2 Gene Expression",
+  caption = paste("Figure 2. Association between maternal age and JAM2 gene expression.",
+                "Each point represents one\n", "participant. The black line represents",
+                "the fitted linear regression, and the gray region represents the\n",
+                "95% confidence interval.")) +
+  theme_classic() +
+    theme(
+      plot.caption = element_text(
+      size = 10,
+      hjust = 0),
+      plot.caption.position = "plot")
 ```
 
 ```{r}
@@ -362,7 +384,30 @@ theme_classic() +
 ```
 
 ```{r}
-
+#Scatterplot of maternal age and PRICKLE2 Expression
+ggplot(PlotData_PRICKLE2, aes(x = mat_age_yrs, y = gene_expression)) +
+  geom_point(
+    color = "forestgreen",
+    alpha = 0.5,
+    size = 2) +
+  geom_smooth(
+    method = "lm",
+    se = TRUE,
+    color = "black") +
+  labs(
+    title = "Maternal Age and PRICKLE2 Gene Expression",
+    x = "Maternal Age (years)",
+    y = "PRICKLE2 Gene Expression",
+  caption = paste("Figure 2. Association between maternal age and PRICKLE2 gene expression.",
+                "Each point represents one\n", "participant. The black line represents",
+                "the fitted linear regression, and the gray region represents the\n",
+                "95% confidence interval.")) +
+  theme_classic() +
+    theme(
+      plot.caption = element_text(
+      size = 10,
+      hjust = 0),
+      plot.caption.position = "plot")
 ```
 
 
