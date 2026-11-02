@@ -89,10 +89,8 @@ head(Covar %>% select(mat_age_yrs, preg_preeclampsia, delivery_gestAge_wks, samp
 ```{r}
 # Check the first few sample IDs in the gene expression data
 names(GeneExpression)[1:10]
-
 # Check the geoID values in the covariate data
 head(Covar$geoID)
-
 # Check the first column of the gene expression data
 head(GeneExpression[[1]])
 ```
@@ -272,6 +270,7 @@ CombinedData <- GeneExpression_long %>%
 My_ProbeIDs <- CombinedData %>%
   filter(GENE %in% c("JAM2", "PRICKLE2")) %>%
   distinct(GENE, PROBEID)
+My_ProbeIDs
 ```
 
 ```{r}
@@ -380,7 +379,13 @@ JAM2_PRICKLE2_Plots <- Gene_Plot_Function(
   continuous_var = "mat_age_yrs",
   categorical_vars = c("preg_preeclampsia", "BMI_category"))
 ```
+##Analysis:
 
+All three histograms expressing the genes WIPI2, JAM2, and PRICKLE2 are fairly normally distributed. Each gene has a tole in keeping the placenta healthy and ensuring the fetus will receive proper nutrients for development. This makes sense that all three genes would have similar distributions. 
+
+All three scatterplots also have similar distributions for the relationship between maternal age and the gene expression. There is a very weak positive correlation between maternal age and gene expression in each scatterplot.
+
+The boxplots do show variations between our genes. The median for WIPI2 gene expression is fairly unchanged between each BMI category in both preeclampsia and normal pregnancies. The medians for preeclampsia in the obese category for JAM2 expression differs, as Normal pregnancies have a lower median. IN the underweight category there is an outlier, but only 5 plot points is not substantial evidence. The most prominent differences in box plots are show in the PRICKLE2 gene expression. The medians for preeclampsia and normal pregnancies are different in each BMI category. To compare all three gene boxplots, I notice that the median gene expression for WIPI2 lies around 8.2. But for JAM2 and PRICKLE2 they lie around 5.5. 
 ```{r}
 
 ```
