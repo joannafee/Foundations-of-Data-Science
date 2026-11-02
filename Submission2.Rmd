@@ -240,6 +240,11 @@ ggplot(
         alpha = 0.6,
         na.rm = TRUE) +
         facet_wrap(~ BMI_category) +
+      geom_jitter(
+        width = 0.2,
+        alpha = 0.4,
+        na.rm = TRUE) +
+      facet_wrap(~ BMI_category) +
       labs(title = "WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
             x = "Pregnancy Outcome",
             y = "WIPI2 Gene Expression",
