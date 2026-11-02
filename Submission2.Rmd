@@ -329,7 +329,30 @@ ggplot(PlotData_JAM2, aes(x = mat_age_yrs, y = gene_expression)) +
 ```
 
 ```{r}
-
+ggplot(
+    PlotData_JAM2,
+      aes(x = preg_preeclampsia, y = gene_expression)) +
+      geom_boxplot(
+        fill = "darkorange",
+        alpha = 0.6,
+        na.rm = TRUE) +
+        facet_wrap(~ BMI_category) +
+#geom_jitter used to represent data better by showing amount of data points. 
+      geom_jitter(
+        width = 0.2,
+        alpha = 0.4,
+        na.rm = TRUE) +
+      facet_wrap(~ BMI_category) +
+      labs(title = "JAM2 Gene Expression by Pregnancy Outcome and BMI Category",
+            x = "Pregnancy Outcome",
+            y = "JAM2 Gene Expression",
+            caption = paste("Figure 3. JAM2 gene expression by pregnancy outcome and maternal BMI category.", "Boxes represent\n", "the interquartile range, center lines indicate medians, and whiskers show the spread of the data.\n", "BMI categories were derived from maternal BMI.")) +
+      theme_classic() +
+        theme(
+        plot.caption = element_text(
+        size = 10,
+        hjust = 0),
+      plot.caption.position = "plot")
 ```
 
 ```{r}
@@ -412,7 +435,30 @@ ggplot(PlotData_PRICKLE2, aes(x = mat_age_yrs, y = gene_expression)) +
 
 
 ```{r}
-
+ggplot(
+    PlotData_PRICKLE2,
+      aes(x = preg_preeclampsia, y = gene_expression)) +
+      geom_boxplot(
+        fill = "forestgreen",
+        alpha = 0.6,
+        na.rm = TRUE) +
+        facet_wrap(~ BMI_category) +
+#geom_jitter used to represent data better by showing amount of data points. 
+      geom_jitter(
+        width = 0.2,
+        alpha = 0.4,
+        na.rm = TRUE) +
+      facet_wrap(~ BMI_category) +
+      labs(title = "PRICKLE2 Gene Expression by Pregnancy Outcome and BMI Category",
+            x = "Pregnancy Outcome",
+            y = "PRICKLE2 Gene Expression",
+            caption = paste("Figure 3. PRICKLE2 gene expression by pregnancy outcome and maternal BMI category.", "Boxes represent\n", "the interquartile range, center lines indicate medians, and whiskers show the spread of the data.\n", "BMI categories were derived from maternal BMI.")) +
+      theme_classic() +
+        theme(
+        plot.caption = element_text(
+        size = 10,
+        hjust = 0),
+      plot.caption.position = "plot")
 ```
 
 
