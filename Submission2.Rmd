@@ -1,0 +1,269 @@
+---
+title: 'Submission 1'
+author: "Joanna Feliciano"
+date: "October 25, 2026"
+output: pdf_document
+---
+
+```{r}
+#Loading necessary library
+library(tidyverse)
+```
+
+```{r}
+#Reading the Data into R --> using tidyverse
+
+Covar          <- read_csv("GSE85307_covar-1.csv")
+GeneExpression <- read_csv("GSE85307_geneExpression.csv")
+GeneNames      <- read_csv("GSE85307_geneNames.csv")
+```
+The Covar file contains variables about each participant: maternal age, pregnancy outcome, Gestation, Blood Draw Date, Microarray Batch Number, BMI, Vitamin D levels, and asthma. 
+The Gene Expression file contains measurements of 500 gene probes across 157 samples. Each roe represents a gene probe. Each sample column contains expression measurements with the first column being probe IDs. 
+The Gene Names file connects the probe IDs to gene names. For example, a probe ID can be linked to a name such as PTX3.
+
+```{r Cleaning-Age}
+#picking out just the numeric in the age column.
+Covar <- Covar %>%
+  #mutate is used to change the column within the data set. 
+  mutate(
+    #str_remove is removing the "age_years: "
+    mat_age_yrs = str_remove(mat_age_yrs, "^age_years:\\s*"),
+    #as.numeric is specifying that the remaining value will be a number,not a character.
+    mat_age_yrs = as.numeric(mat_age_yrs))
+
+#making sure the cleaning created a numeric and removed the characters. 
+head(Covar$mat_age_yrs)
+class(Covar$mat_age_yrs)
+```
+
+```{r Cleaning All Variables}
+#Continuing with remaining variables. 
+
+#Condition
+Covar <- Covar %>%
+  mutate(
+    preg_preeclampsia = str_remove(preg_preeclampsia,"^pregnancy_condition:\\s*"),
+    preg_preeclampsia = factor(preg_preeclampsia))
+#Delivery
+Covar <- Covar %>%
+  mutate(
+    delivery_gestAge_wks = str_remove(delivery_gestAge_wks, "^gestation_weeks:\\s*"),
+    delivery_gestAge_wks = as.numeric(delivery_gestAge_wks))
+#Sample Collection
+Covar <- Covar %>%
+  mutate(
+    sampleCollection_gestAge_wks = str_remove(sampleCollection_gestAge_wks,
+      "^blood_draw_at_gestation_week:\\s*"),
+    sampleCollection_gestAge_wks =
+      as.numeric(sampleCollection_gestAge_wks))
+#Batch MicroArray
+Covar <- Covar %>%
+  mutate(
+    batch_Microarray = str_remove(batch_Microarray,
+      "^microarray_hybridization_date:\\s*"),
+    batch_Microarray = as.factor(batch_Microarray))
+#BMI
+Covar <- Covar %>%
+  mutate(
+    mat_BMI = str_remove(mat_BMI, "^bmi_kg/m2:\\s*"),
+    mat_BMI = as.numeric(mat_BMI))
+#Vitamin D
+Covar <- Covar %>%
+  mutate(
+    mat_vitD = str_remove(mat_vitD,
+      "^vitamind_25\\(0h\\)_ng/ml_whole_blood_baseline:\\s*"),
+    mat_vitD = as.numeric(mat_vitD))
+#Asthma
+Covar <- Covar %>%
+  mutate(
+    mat_asthma = str_remove(mat_asthma, "asthma_0=healthy_1=asthmatic:\\s*"),
+    mat_asthma = as.factor(mat_asthma))
+```
+
+```{r}
+#Summary of Cleaned Variables. 
+head(Covar %>% select(mat_age_yrs, preg_preeclampsia, delivery_gestAge_wks, sampleCollection_gestAge_wks,
+                      batch_Microarray, mat_BMI, mat_vitD, mat_asthma))
+```
+
+```{r}
+# Check the first few sample IDs in the gene expression data
+names(GeneExpression)[1:10]
+
+# Check the geoID values in the covariate data
+head(Covar$geoID)
+
+# Check the first column of the gene expression data
+head(GeneExpression[[1]])
+```
+
+
+```{r}
+#Our first column is unnamed, so we will identify it. 
+GeneExpression <- GeneExpression %>%
+  rename(PROBEID = 1)
+
+#we want to extract the geoID from both csv files. 
+covar_ids <- Covar$geoID
+expression_ids <- names(GeneExpression)[-1]
+
+# Count how many sample IDs match
+sum(covar_ids %in% expression_ids)
+
+# Check whether any covariate sample IDs are missing from gene expression
+setdiff(covar_ids, expression_ids)
+
+# Check how many gene-expression sample IDs match the covariate data
+sum(expression_ids %in% covar_ids)
+```
+
+```{r}
+#selecting a gene to observe. 
+#we are looking for the PROBEID that goes along with selected gene. WIPI2
+My_Gene <- GeneNames %>%
+  filter(GENE == "WIPI2")
+
+# Check that the probe ID exists in the expression data
+GeneExpression %>%
+  filter(PROBEID %in% My_Gene$PROBEID)
+#the output will show that the gene is present in all 157 observations. 
+```
+
+```{r}
+# Extract expression values for the selected gene
+WIPI2 <- GeneExpression %>%
+  filter(PROBEID == 8131303)
+
+# Change the data from wide format to long format
+# Each row will represent one sample
+WIPI2_long <- WIPI2 %>%
+  pivot_longer(
+    cols = -PROBEID,
+    names_to = "geoID",
+    values_to = "gene_expression")
+
+# Match gene expression to participant information using geoID
+PlotData <- Covar %>%
+  inner_join(WIPI2_long, by = "geoID")
+
+# Check the resulting data, make sure its clean and there are no NA values. 
+PlotData
+```
+
+```{r}
+#histogram of WIPI2 Gene Expression
+ggplot(PlotData, aes(x = gene_expression)) +
+geom_histogram(
+      bins = 20,
+      fill = "purple",
+      color = "white") +
+    labs(
+        title = "Distribution of WIPI2 Gene Expression",
+        x = "WIPI2 Gene Expression",
+        y = "Number of Participants",
+    caption = paste("Figure 1. Distribution of WIPI2 gene expression among",
+                  "157 maternal samples.\n","Bars represent the number of",
+                  "participants within each gene-expression interval.")) +
+theme_classic() +
+    theme(
+        plot.caption = element_text(
+        size = 10,
+        hjust = 0))
+```
+The histogram shows the distribution of WIPI2 gene expression across the 157 participants. The center of the
+histogram lies around the 8.1-8.2 value. The shape is relatively normally distributed with a rough bell shape,
+and one distinct peak. Spread is from 7.75 to 8.53.
+
+```{r}
+#Scatterplot of maternal age and My_Gene Expression
+ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
+  geom_point(
+    color = "purple",
+    alpha = 0.5,
+    size = 2) +
+  geom_smooth(
+    method = "lm",
+    se = TRUE,
+    color = "black") +
+  labs(
+    title = "Maternal Age and WIPI2 Gene Expression",
+    x = "Maternal Age (years)",
+    y = "WIPI2 Gene Expression",
+  caption = paste("Figure 2. Association between maternal age and WIPI2 gene expression.",
+                "Each point represents one\n", "participant. The black line represents",
+                "the fitted linear regression, and the gray region represents the\n",
+                "95% confidence interval.")) +
+  theme_classic() +
+    theme(
+      plot.caption = element_text(
+      size = 10,
+      hjust = 0),
+      plot.caption.position = "plot")
+```
+The scatter plot shows the relationship between Maternal Age and WIPI2 Gene Expression. The direction of
+the plot shows a positive relationship between the variables, but it is very weak. The strength of association
+is weak as well as the data points are scattered around the line. The gray shaded area is the 95% confidence
+interval. The scatter plot does not show a strong visual association between the Gene Expression and
+Maternal Age.
+
+```{r}
+#deriving categories from a continuous variable - BMI
+Covar <- Covar %>%
+      mutate(
+        BMI_category = cut(
+        mat_BMI,
+        breaks = c(-Inf, 18.5, 25, 30, Inf),
+        labels = c(
+            "Underweight",
+            "Normal weight",
+            "Overweight",
+            "Obesity"),
+        right = FALSE))
+# Check the new BMI categories
+Covar %>%
+count(BMI_category)
+```
+
+```{r}
+#adding the new column to our original data set.
+PlotData <- Covar %>%
+    inner_join(WIPI2_long, by = "geoID")
+```
+
+```{r}
+# Boxplot of WIPI2 gene expression by pregnancy outcome and BMI category
+ggplot(
+    PlotData,
+      aes(x = preg_preeclampsia, y = gene_expression)) +
+      geom_boxplot(
+        fill = "purple",
+        alpha = 0.6,
+        na.rm = TRUE) +
+        facet_wrap(~ BMI_category) +
+      labs(title = "WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
+            x = "Pregnancy Outcome",
+            y = "WIPI2 Gene Expression",
+            caption = paste("Figure 3. WIPI2 gene expression by pregnancy outcome and maternal BMI category.",
+            "Boxes represent\n", "the interquartile range, center lines indicate medians, 
+            and whiskers show the spread of the data.\n", "BMI categories were derived from maternal BMI.")) +
+      theme_classic() +
+        theme(
+        plot.caption = element_text(
+        size = 10,
+        hjust = 0),
+      plot.caption.position = "plot")
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+
