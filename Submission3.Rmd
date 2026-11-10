@@ -10,6 +10,7 @@ output: pdf_document
 library(tidyverse)
 library(gt)
 library(gtsummary)
+library(pheatmap)
 ```
 
 ## Part 1: Data Cleaning
@@ -20,6 +21,16 @@ library(gtsummary)
 Covar          <- read_csv("GSE85307_covar-1.csv")
 GeneExpression <- read_csv("GSE85307_geneExpression.csv")
 GeneNames      <- read_csv("GSE85307_geneNames.csv")
+```
+```{r}
+#initial sample sizes before cleaning
+initial_covar_samples <- n_distinct(Covar$geoID)
+
+# Gene expression samples are stored as columns (excluding PROBEID)
+initial_expression_samples <- ncol(GeneExpression) - 1
+
+initial_covar_samples
+initial_expression_samples
 ```
 
 ```{r Cleaning-Age}
@@ -173,7 +184,9 @@ PlotData <- Covar %>%
   inner_join(WIPI2_long, by = "geoID")
 ```
 
-# Histogram of WIPI2 Gene Expression
+# Part 2: First Gene Plots
+
+### Histogram of WIPI2 Gene Expression
 
 ```{r}
 #ggplot required
@@ -244,7 +257,6 @@ ggplot(PlotData, aes(x = preg_preeclampsia, y = gene_expression)) +
         fill = "purple",
         alpha = 0.6,
         na.rm = TRUE) +
-        facet_wrap(~ BMI_category) +
 #geom_jitter used to represent data better by showing amount of data points. 
       geom_jitter(
         width = 0.2,
@@ -264,6 +276,9 @@ ggplot(PlotData, aes(x = preg_preeclampsia, y = gene_expression)) +
         hjust = 0),
       plot.caption.position = "plot")
 ```
+
+# Part 3: Function for Future Plots
+
 ```{r}
 #creating a data frame that holds our covariate and categoricals. 
 #Convert gene expression data from wide to long format
@@ -276,6 +291,24 @@ GeneExpression_long <- GeneExpression %>%
 CombinedData <- GeneExpression_long %>%
   inner_join(GeneNames, by = "PROBEID") %>%
   inner_join(Covar, by = "geoID")
+
+#Final sample size for reference
+final_sample_size <- n_distinct(CombinedData$geoID)
+final_participant_size <- n_distinct(CombinedData$subjectID)
+
+final_sample_size
+final_participant_size
+```
+
+```{r}
+# Count missing values in each covariate
+Missing_Data <- Covar %>%
+  summarise(across(everything(), ~sum(is.na(.)))) %>%
+  pivot_longer(
+    cols = everything(),
+    names_to = "Variable",
+    values_to = "Missing_Count")
+Missing_Data
 ```
 
 
@@ -372,7 +405,6 @@ Gene_Plot_Function <- function(data,
   #Return all plots
   return(All_Plots)
 }
-
 ```
 
 
@@ -384,13 +416,106 @@ JAM2_PRICKLE2_Plots <- Gene_Plot_Function(
   categorical_vars = c("preg_preeclampsia", "BMI_category"))
 ```
 
-```{r}
+# Part 4: Sample Data Table
 
+```{r}
+# Create summary statistics table stratified by pregnancy outcome
+Summary_Table <- Covar %>%
+  select(
+    mat_age_yrs,
+    mat_BMI,
+    mat_vitD,
+    BMI_category,
+    preg_preeclampsia) %>%
+  tbl_summary(
+    by = preg_preeclampsia,
+    label = list(
+      mat_age_yrs ~ "Maternal Age (years)",
+      mat_BMI ~ "Maternal BMI (kg/m²)",
+      mat_vitD ~ "Maternal Vitamin D (ng/mL)",
+      BMI_category ~ "BMI Category"
+    ),
+    statistic = list(
+      all_continuous() ~ "{mean} ({sd})",
+      all_categorical() ~ "{n} ({p}%)"
+    ),
+    digits = all_continuous() ~ 2,)
+
+Summary_Table
+```
+
+# Part 4: Heat Map
+
+```{r}
+# Select 10 genes for the heatmap
+#selected based on there siginificane in the health of placenta during pregnancy
+Heatmap_Genes <- c(
+  "WIPI2",
+  "JAM2",
+  "PRICKLE2",
+  "PLAC4",
+  "IGFBP1",
+  "TIMP1",
+  "NODAL",
+  "VIT",
+  "CDH2",
+  "MEST")
+
+#making sure PROBEID exist for all 10 genes
+Heatmap_ProbeIDs <- GeneNames %>%
+  filter(GENE %in% Heatmap_Genes) %>%
+  distinct(GENE, PROBEID) %>%
+  arrange(match(GENE, Heatmap_Genes))
 ```
 
 ```{r}
+#New Data set for just the heat maps 10 genes. 
+Heatmap_Data <- CombinedData %>%
+  #using CombinedData as it has our covariates, gene_expression, geoID, and GENE.
+  inner_join(Heatmap_ProbeIDs, by = c("GENE", "PROBEID")) %>%
+  select(GENE, geoID, gene_expression) %>%
+  #10 rows of genes, with 157 sample data in each column. 
+  pivot_wider(
+    names_from = geoID,
+    values_from = gene_expression)
 
+#Matrix necessary for removing the gene name column, and making it the row name instead. 
+#we now have 10 rows of 157 samples
+Heatmap_Matrix <- Heatmap_Data %>%
+  column_to_rownames("GENE") %>%
+  as.matrix()
 ```
 
+```{r}
+heatmap_cats <- Covar %>%
+  select(geoID, preg_preeclampsia, BMI_category) %>%
+  distinct() %>%
+  mutate(
+    preg_preeclampsia = recode(
+      as.character(preg_preeclampsia),
+      "Normal" = "No Preeclampsia")) %>%
+  rename(
+    `Preeclampsia Status` = preg_preeclampsia,
+    `Maternal BMI Category` = BMI_category) %>%
+  column_to_rownames("geoID")
 
+# Match annotation order to heat map samples
+heatmap_cats <- heatmap_cats[
+  colnames(Heatmap_Matrix),]
+```
+
+```{r}
+pheatmap(
+  Heatmap_Matrix,
+  scale = "row",
+  annotation_col = heatmap_cats,
+  clustering_distance_rows = "euclidean",
+  clustering_distance_cols = "euclidean",
+  clustering_method = "complete",
+  show_colnames = FALSE,
+  fontsize_row = 10,
+  #removing the borders is necessary because we have 157 interpretations. 
+  border_color = NA,
+  main = "Gene Expression Patterns Across Samples")
+```
 
