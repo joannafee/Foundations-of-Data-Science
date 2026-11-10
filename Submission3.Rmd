@@ -1,5 +1,5 @@
 ---
-title: 'Submission 3'
+title: 'Final Submission'
 author: "Joanna Feliciano"
 date: "November 11, 2026"
 output: pdf_document
@@ -8,7 +8,11 @@ output: pdf_document
 ```{r setup, include=FALSE}
 #Loading necessary library
 library(tidyverse)
+library(gt)
+library(gtsummary)
 ```
+
+## Part 1: Data Cleaning
 
 ```{r, results='hide'}
 #Reading the Data into R --> using tidyverse
@@ -17,9 +21,6 @@ Covar          <- read_csv("GSE85307_covar-1.csv")
 GeneExpression <- read_csv("GSE85307_geneExpression.csv")
 GeneNames      <- read_csv("GSE85307_geneNames.csv")
 ```
-The Covar file contains variables about each participant: maternal age, pregnancy outcome, Gestation, Blood Draw Date, Microarray Batch Number, BMI, Vitamin D levels, and asthma. 
-The Gene Expression file contains measurements of 500 gene probes across 157 samples. Each roe represents a gene probe. Each sample column contains expression measurements with the first column being probe IDs. 
-The Gene Names file connects the probe IDs to gene names. For example, a probe ID can be linked to a name such as PTX3.
 
 ```{r Cleaning-Age}
 #picking out just the numeric in the age column.
@@ -81,6 +82,26 @@ Covar <- Covar %>%
 ```
 
 ```{r}
+#deriving categories from a continuous variable - BMI
+Covar <- Covar %>%
+      mutate(
+        BMI_category = cut(
+        mat_BMI,
+        #breaks indicate BMI values cutoffs for each category (Inf stand in for below and above)
+        breaks = c(-Inf, 18.5, 25, 30, Inf),
+        #Labels match the breaks indicated above. standard BMI cutoffs.  
+        labels = c(
+            "Underweight",
+            "Normal weight",
+            "Overweight",
+            "Obesity"),
+        right = FALSE))
+# Check the new BMI categories
+Covar %>%
+count(BMI_category)
+```
+
+```{r}
 #Summary of Cleaned Variables. 
 head(Covar %>% select(mat_age_yrs, preg_preeclampsia, delivery_gestAge_wks, sampleCollection_gestAge_wks,
                       batch_Microarray, mat_BMI, mat_vitD, mat_asthma))
@@ -127,47 +148,56 @@ My_ProbeID <- GeneNames %>%
   filter(GENE == "WIPI2") %>%
   #pull is used to extract just the probeid from the gene we want 
   pull(PROBEID) #pulling from the column looking just for WIPI2
-#Finding the gene expression data using the matched probe ID
-My_Gene_Expression <- GeneExpression %>%
-  filter(PROBEID %in% My_ProbeID)
 ```
 
 ```{r}
 # Extract expression values for the selected gene
 WIPI2 <- GeneExpression %>%
+  #from GeneExpression we was to filter all the observations of WIPI2 which is My_ProbeID
   filter(PROBEID %in% My_ProbeID)
+  #gives a new data set with just WIPI2 variables. 
 
-# Change the data from wide format to long format
-# Each row will represent one sample
+# Change the data from wide format to long format to change from one observation to 157 observations. 
+# Each row will represent one sample or observation. 
 WIPI2_long <- WIPI2 %>%
   pivot_longer(
+    #cols will remove the PROBEID column as its not needed
     cols = -PROBEID,
     names_to = "geoID",
     values_to = "gene_expression")
 
 # Match gene expression to participant information using geoID
+#Plotdata will be used to plot WIPI2, and its going to have just WIPI2_long and the 12 patient covariates. 
 PlotData <- Covar %>%
+  #inner_join is used almost like mutate, to join the geoID col to my WIPI2_long dataset. 
   inner_join(WIPI2_long, by = "geoID")
 ```
 
+# Histogram of WIPI2 Gene Expression
+
 ```{r}
-#histogram of WIPI2 Gene Expression
-ggplot(PlotData, aes(x = gene_expression)) +
+#ggplot required
+#x is our gene_expression value which is a numeric.
+ggplot(PlotData, aes(x = gene_expression))+
 geom_histogram(
+  #bins are used to change how thick the histogram bars are. 
       bins = 20,
+      #fill is for filling the color of the histogram bars. 
       fill = "purple",
+      #color here is for between the bins to tell our towers apart. 
       color = "white") +
     labs(
-        title = "Distribution of WIPI2 Gene Expression",
-        x = "WIPI2 Gene Expression",
+        title = expression("Distribution of " * italic("WIPI2") * " Gene Expression"),
+        x = expression(italic("WIPI2") * " Gene Expression"),
         y = "Number of Participants",
-    caption = paste("Figure 1. Distribution of WIPI2 gene expression among",
+        caption = paste("Figure 1. Distribution of WIPI2 gene expression among",
                   "157 maternal samples.\n","Bars represent the number of",
                   "participants within each gene-expression interval.")) +
 theme_classic() +
     theme(
         plot.caption = element_text(
         size = 10,
+        #0 indicates alignment to the left. 
         hjust = 0))
 ```
 The histogram shows the distribution of WIPI2 gene expression across the 157 participants. The center of the
@@ -175,7 +205,7 @@ histogram lies around the 8.1-8.2 value. The shape is relatively normally distri
 and one distinct peak. Spread is from 7.75 to 8.53.
 
 ```{r}
-#Scatterplot of maternal age and My_Gene Expression
+#Scatter plot of maternal age and gene_expression
 ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
   geom_point(
     color = "purple",
@@ -186,9 +216,9 @@ ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
     se = TRUE,
     color = "black") +
   labs(
-    title = "Maternal Age and WIPI2 Gene Expression",
+    title = expression("Maternal Age and " * italic(WIPI2) * " Gene Expression"),
     x = "Maternal Age (years)",
-    y = "WIPI2 Gene Expression",
+    y = expression(italic("WIPI2") * " Gene Expression"),
   caption = paste("Figure 2. Association between maternal age and WIPI2 gene expression.",
                 "Each point represents one\n", "participant. The black line represents",
                 "the fitted linear regression, and the gray region represents the\n",
@@ -206,35 +236,10 @@ is weak as well as the data points are scattered around the line. The gray shade
 interval. The scatter plot does not show a strong visual association between the Gene Expression and
 Maternal Age.
 
-```{r}
-#deriving categories from a continuous variable - BMI
-Covar <- Covar %>%
-      mutate(
-        BMI_category = cut(
-        mat_BMI,
-        breaks = c(-Inf, 18.5, 25, 30, Inf),
-        labels = c(
-            "Underweight",
-            "Normal weight",
-            "Overweight",
-            "Obesity"),
-        right = FALSE))
-# Check the new BMI categories
-Covar %>%
-count(BMI_category)
-```
 
 ```{r}
-#adding the new column to our original data set.
-PlotData <- Covar %>%
-    inner_join(WIPI2_long, by = "geoID")
-```
-
-```{r}
-# Boxplot of WIPI2 gene expression by pregnancy outcome and BMI category
-ggplot(
-    PlotData,
-      aes(x = preg_preeclampsia, y = gene_expression)) +
+# Box plot of WIPI2 gene expression by pregnancy outcome and BMI category
+ggplot(PlotData, aes(x = preg_preeclampsia, y = gene_expression)) +
       geom_boxplot(
         fill = "purple",
         alpha = 0.6,
@@ -245,10 +250,12 @@ ggplot(
         width = 0.2,
         alpha = 0.4,
         na.rm = TRUE) +
+  #facet_wrap used to create panels for the categoricals. 
       facet_wrap(~ BMI_category) +
-      labs(title = "WIPI2 Gene Expression by Pregnancy Outcome and BMI Category",
+      labs(
+            title = expression(italic("WIPI2") * " Gene Expression by Pregnancy Outcome and BMI Category"),
             x = "Pregnancy Outcome",
-            y = "WIPI2 Gene Expression",
+            y = expression(italic("WIPI2") * " Gene Expression"),
             caption = paste("Figure 3. WIPI2 gene expression by pregnancy outcome and maternal BMI category.", "Boxes represent\n", "the interquartile range, center lines indicate medians, and whiskers show the spread of the data.\n", "BMI categories were derived from maternal BMI.")) +
       theme_classic() +
         theme(
@@ -271,12 +278,6 @@ CombinedData <- GeneExpression_long %>%
   inner_join(Covar, by = "geoID")
 ```
 
-```{r}
-My_ProbeIDs <- CombinedData %>%
-  filter(GENE %in% c("JAM2", "PRICKLE2")) %>%
-  distinct(GENE, PROBEID)
-My_ProbeIDs
-```
 
 ```{r}
 #Function Creation
@@ -285,27 +286,27 @@ Gene_Plot_Function <- function(data,
                                continuous_var,
                                categorical_vars) {
 
-#Identify the probe IDs for my two newly selected genes
+  #Identify the probe IDs for the selected genes
   My_ProbeIDs <- data %>%
     filter(GENE %in% genes) %>%
     distinct(GENE, PROBEID)
 
-#Extract gene expression data for the two newly selected genes
+  #Extract gene expression data for the selected genes
   PlotData <- data %>%
     inner_join(My_ProbeIDs, by = c("GENE", "PROBEID"))
 
-#Create an empty list to store all plots
+  #Create an empty list to store all plots
   All_Plots <- list()
+  
+  #incorporating feedback by creating a color palette (I want my pickle green!)
+  my.gene.palette <- c("firebrick", "forestgreen", "steelblue", "purple", "darkorange")
 
-#looping the plotting instructions for each gene
-  for (gene in genes) {
-#Assign a color to each gene #Claude helped with figuring out how to make each gene its own color. 
-    gene_color <- if (gene == "JAM2") {
-      "darkorange"
-    } else if (gene == "PRICKLE2") {
-      "forestgreen"
-    }
-    #one gene at a time
+  #Loop through the plotting instructions for each gene
+  for (i in seq_along(genes)) {
+    gene <- genes[i]
+    gene_color <- my.gene.palette[i]
+
+    #One gene at a time
     GeneData <- PlotData %>%
       filter(GENE == gene)
 
@@ -316,15 +317,14 @@ Gene_Plot_Function <- function(data,
         fill = gene_color,
         color = "white") +
       labs(
-        title = paste("Distribution of", gene, "Gene Expression"),
-        x = paste(gene, "Gene Expression"),
+        #bquote introduced instead of paste to incorporate "italic"
+        title = bquote("Distribution of " * italic(.(gene)) * " Gene Expression"),
+        x = bquote(italic(.(gene)) * " Gene Expression"),
         y = "Number of Participants") +
       theme_classic()
-    
-    # SCATTERPLOT: Maternal age and gene expression
-    Scatterplot <- ggplot(
-      GeneData,
-      aes(x = .data[[continuous_var]], y = gene_expression)) +
+
+    #SCATTERPLOT: Maternal age and gene expression
+    Scatterplot <- ggplot(GeneData, aes(x = .data[[continuous_var]], y = gene_expression)) +
       geom_point(
         color = gene_color,
         alpha = 0.5,
@@ -334,17 +334,13 @@ Gene_Plot_Function <- function(data,
         se = TRUE,
         color = "black") +
       labs(
-        title = paste("Maternal Age and", gene, "Gene Expression"),
+        title = bquote("Maternal Age and " * italic(.(gene)) * " Gene Expression"),
         x = "Maternal Age (years)",
-        y = paste(gene, "Gene Expression")) +
+        y = bquote(italic(.(gene)) * " Gene Expression")) +
       theme_classic()
 
-    # BOXPLOT: Gene expression by pregnancy outcome and BMI category
-    Boxplot <- ggplot(
-      GeneData,
-      aes(
-        x = .data[[categorical_vars[1]]],
-        y = gene_expression)) +
+    #BOXPLOT: Gene expression by pregnancy outcome and BMI category
+    Boxplot <- ggplot(GeneData, aes(x = .data[[categorical_vars[1]]], y = gene_expression)) +
       geom_boxplot(
         fill = gene_color,
         alpha = 0.6,
@@ -353,29 +349,32 @@ Gene_Plot_Function <- function(data,
         width = 0.2,
         alpha = 0.4,
         na.rm = TRUE) +
+      #creates a separate panel for each BMI category
       facet_wrap(vars(.data[[categorical_vars[2]]])) +
       labs(
-        title = paste(
-          gene,
-          "Gene Expression by Pregnancy Outcome and BMI Category"),
+        title = bquote(italic(.(gene)) * " Gene Expression by Pregnancy Outcome and BMI Category"),
         x = "Pregnancy Outcome",
-        y = paste(gene, "Gene Expression")) +
+        y = bquote(italic(.(gene)) * " Gene Expression")) +
       theme_classic()
 
-    # Store the three plots for each gene
+    #Store the three plots for each gene
     All_Plots[[gene]] <- list(
       Histogram = Histogram,
       Scatterplot = Scatterplot,
       Boxplot = Boxplot)
 
-    # Display the three plots
+    #Display the three plots
     print(Histogram)
     print(Scatterplot)
-    print(Boxplot)}
+    print(Boxplot)
+  }
 
-  # Return all plots
-  return(All_Plots)}
+  #Return all plots
+  return(All_Plots)
+}
+
 ```
+
 
 ```{r}
 JAM2_PRICKLE2_Plots <- Gene_Plot_Function(
@@ -384,13 +383,7 @@ JAM2_PRICKLE2_Plots <- Gene_Plot_Function(
   continuous_var = "mat_age_yrs",
   categorical_vars = c("preg_preeclampsia", "BMI_category"))
 ```
-##Analysis:
 
-All three histograms expressing the genes WIPI2, JAM2, and PRICKLE2 are fairly normally distributed. Each gene has a tole in keeping the placenta healthy and ensuring the fetus will receive proper nutrients for development. This makes sense that all three genes would have similar distributions. 
-
-All three scatterplots also have similar distributions for the relationship between maternal age and the gene expression. There is a very weak positive correlation between maternal age and gene expression in each scatterplot.
-
-The boxplots do show variations between our genes. The median for WIPI2 gene expression is fairly unchanged between each BMI category in both preeclampsia and normal pregnancies. The medians for preeclampsia in the obese category for JAM2 expression differs, as Normal pregnancies have a lower median. IN the underweight category there is an outlier, but only 5 plot points is not substantial evidence. The most prominent differences in box plots are show in the PRICKLE2 gene expression. The medians for preeclampsia and normal pregnancies are different in each BMI category. To compare all three gene boxplots, I notice that the median gene expression for WIPI2 lies around 8.2. But for JAM2 and PRICKLE2 they lie around 5.5. 
 ```{r}
 
 ```
