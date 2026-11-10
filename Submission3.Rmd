@@ -490,10 +490,6 @@ Heatmap_Matrix <- Heatmap_Data %>%
 heatmap_cats <- Covar %>%
   select(geoID, preg_preeclampsia, BMI_category) %>%
   distinct() %>%
-  mutate(
-    preg_preeclampsia = recode(
-      as.character(preg_preeclampsia),
-      "Normal" = "No Preeclampsia")) %>%
   rename(
     `Preeclampsia Status` = preg_preeclampsia,
     `Maternal BMI Category` = BMI_category) %>%
@@ -514,8 +510,46 @@ pheatmap(
   clustering_method = "complete",
   show_colnames = FALSE,
   fontsize_row = 10,
+  labels_row = parse(text = paste0("italic('", rownames(Heatmap_Matrix), "')")),
   #removing the borders is necessary because we have 157 interpretations. 
   border_color = NA,
   main = "Gene Expression Patterns Across Samples")
 ```
 
+# Part 5: Additional Plot
+
+```{r}
+Barplot_Data <- CombinedData %>%
+  #filtering out our ten genes from the original data
+  filter(GENE %in% Heatmap_Genes) %>%
+  #we are looking at comparing pre-eclampsia conditions. 
+  group_by(GENE, preg_preeclampsia) %>%
+  summarise(
+    #i want to look at mean gene expression for my ten genes. 
+    mean_expression = mean(gene_expression, na.rm = TRUE),
+    sd_expression = sd(gene_expression, na.rm = TRUE),
+    n = n(),
+    se = sd_expression / sqrt(n),
+    .groups = "drop")
+```
+
+```{r}
+ggplot(
+  Barplot_Data,
+  aes(x = GENE, y = mean_expression, fill = preg_preeclampsia)) +
+  geom_col(
+    position = position_dodge(width = 0.8),
+    width = 0.7) +
+  #this is used for formatting the extraced gene names. 
+  scale_x_discrete(
+    labels = function(x) parse(text = paste0("italic('", x, "')"))) +
+  labs(
+    title = "Mean Gene Expression by Pregnancy Outcome",
+    x = "Gene",
+    y = "Mean Gene Expression",
+    fill = "Pregnancy Outcome") +
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1))
+```
