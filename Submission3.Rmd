@@ -15,7 +15,7 @@ library(pheatmap)
 
 ## Part 1: Data Cleaning
 
-```{r, results='hide'}
+```{r, message=FALSE}
 #Reading the Data into R --> using tidyverse
 
 Covar          <- read_csv("GSE85307_covar-1.csv")
@@ -213,9 +213,6 @@ theme_classic() +
         #0 indicates alignment to the left. 
         hjust = 0))
 ```
-The histogram shows the distribution of WIPI2 gene expression across the 157 participants. The center of the
-histogram lies around the 8.1-8.2 value. The shape is relatively normally distributed with a rough bell shape,
-and one distinct peak. Spread is from 7.75 to 8.53.
 
 ```{r}
 #Scatter plot of maternal age and gene_expression
@@ -243,12 +240,6 @@ ggplot(PlotData, aes(x = mat_age_yrs, y = gene_expression)) +
       hjust = 0),
       plot.caption.position = "plot")
 ```
-The scatter plot shows the relationship between Maternal Age and WIPI2 Gene Expression. The direction of
-the plot shows a positive relationship between the variables, but it is very weak. The strength of association
-is weak as well as the data points are scattered around the line. The gray shaded area is the 95% confidence
-interval. The scatter plot does not show a strong visual association between the Gene Expression and
-Maternal Age.
-
 
 ```{r}
 # Box plot of WIPI2 gene expression by pregnancy outcome and BMI category
@@ -308,7 +299,6 @@ Missing_Data <- Covar %>%
     cols = everything(),
     names_to = "Variable",
     values_to = "Missing_Count")
-Missing_Data
 ```
 
 
@@ -401,7 +391,6 @@ Gene_Plot_Function <- function(data,
     print(Scatterplot)
     print(Boxplot)
   }
-
   #Return all plots
   return(All_Plots)
 }
