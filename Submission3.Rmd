@@ -22,6 +22,7 @@ Covar          <- read_csv("GSE85307_covar-1.csv")
 GeneExpression <- read_csv("GSE85307_geneExpression.csv")
 GeneNames      <- read_csv("GSE85307_geneNames.csv")
 ```
+
 ```{r}
 #initial sample sizes before cleaning
 initial_covar_samples <- n_distinct(Covar$geoID)
@@ -182,6 +183,10 @@ WIPI2_long <- WIPI2 %>%
 PlotData <- Covar %>%
   #inner_join is used almost like mutate, to join the geoID col to my WIPI2_long dataset. 
   inner_join(WIPI2_long, by = "geoID")
+
+#added suggestion, a mean line for all histograms. 
+#Calculate the mean gene expression
+mean.expression.wipi2 <- mean(PlotData$gene_expression)
 ```
 
 # Part 2: First Gene Plots
@@ -199,6 +204,11 @@ geom_histogram(
       fill = "purple",
       #color here is for between the bins to tell our towers apart. 
       color = "white") +
+    geom_vline(
+        xintercept = mean.expression.wipi2,
+        color = "black",
+        linetype = "dotted",
+        linewidth = 1) +
     labs(
         title = expression("Distribution of " * italic("WIPI2") * " Gene Expression"),
         x = expression(italic("WIPI2") * " Gene Expression"),
@@ -327,11 +337,14 @@ Gene_Plot_Function <- function(data,
   #Loop through the plotting instructions for each gene
   for (i in seq_along(genes)) {
     gene <- genes[i]
-    gene_color <- my.gene.palette[i]
+    gene_color <- if (gene == "WIPI2") {"purple"
+      } else {my.gene.palette[i]}
 
     #One gene at a time
     GeneData <- PlotData %>%
       filter(GENE == gene)
+    
+    mean_expression <- mean(GeneData$gene_expression)
 
     #HISTOGRAM: Distribution of gene expression
     Histogram <- ggplot(GeneData, aes(x = gene_expression)) +
@@ -339,6 +352,11 @@ Gene_Plot_Function <- function(data,
         bins = 20,
         fill = gene_color,
         color = "white") +
+      geom_vline(
+        xintercept = mean_expression,
+        color = "black",
+        linetype = "dotted",
+        linewidth = 1) +
       labs(
         #bquote introduced instead of paste to incorporate "italic"
         title = bquote("Distribution of " * italic(.(gene)) * " Gene Expression"),
@@ -428,7 +446,10 @@ Summary_Table <- Covar %>%
       all_continuous() ~ "{mean} ({sd})",
       all_categorical() ~ "{n} ({p}%)"
     ),
-    digits = all_continuous() ~ 2,)
+    digits = list(
+  mat_age_yrs ~ 0,
+  mat_BMI ~ 2,
+  mat_vitD ~ 2))
 
 Summary_Table
 ```
@@ -541,4 +562,126 @@ ggplot(
   theme(
     plot.title = element_text(hjust = 0.5),
     axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+# Exporting Plots
+
+```{r Export-First-Nine-Plots, include=FALSE}
+
+# Reproduce the three WIPI2 plots using the existing function
+WIPI2_Plots <- Gene_Plot_Function(
+  data = CombinedData,
+  genes = "WIPI2",
+  continuous_var = "mat_age_yrs",
+  categorical_vars = c("preg_preeclampsia", "BMI_category"))
+
+# Combine all nine plots into one list
+All_Nine_Plots <- c(WIPI2_Plots, JAM2_PRICKLE2_Plots)
+
+# Create a folder to store exported figures
+dir.create("figures", showWarnings = FALSE)
+
+# Export each plot as a high-resolution PNG
+for (gene in names(All_Nine_Plots)) {
+  for (plot_type in names(All_Nine_Plots[[gene]])) {
+
+    ggsave(
+      filename = paste0(
+        "figures/Figure_", gene, "_", plot_type, ".png"),
+      plot = All_Nine_Plots[[gene]][[plot_type]],
+      width = 8,
+      height = 6,
+      dpi = 300)
+  }
+}
+```
+
+```{r Export-Heatmap, include=FALSE}
+
+# Export a separate copy of the finalized heatmap
+pheatmap(
+  Heatmap_Matrix,
+  scale = "row",
+  annotation_col = heatmap_cats,
+  clustering_distance_rows = "euclidean",
+  clustering_distance_cols = "euclidean",
+  clustering_method = "complete",
+  show_colnames = FALSE,
+  fontsize_row = 10,
+  labels_row = parse(text = paste0("italic('", rownames(Heatmap_Matrix), "')")),
+  border_color = NA,
+  main = "Gene Expression Patterns Across Samples",
+  filename = "figures/Figure4_Heatmap.png",
+  width = 10,
+  height = 7
+)
+```
+
+```{r Export-Barplot, include=FALSE}
+
+# Reproduce the finalized grouped barplot for export
+Barplot_Export <- ggplot(
+  Barplot_Data,
+  aes(x = GENE, y = mean_expression, fill = preg_preeclampsia)) +
+  geom_col(
+    position = position_dodge(width = 0.8),
+    width = 0.7) +
+  scale_x_discrete(
+    labels = function(x) parse(text = paste0("italic('", x, "')"))) +
+  labs(
+    title = "Mean Gene Expression by Pregnancy Outcome",
+    x = "Gene",
+    y = "Mean Gene Expression",
+    fill = "Pregnancy Outcome") +
+  theme_classic() +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    axis.text.x = element_text(angle = 45, hjust = 1))
+
+# Save as a high-resolution PNG
+ggsave(
+  filename = "figures/Figure5_Barplot.png",
+  plot = Barplot_Export,
+  width = 9,
+  height = 6,
+  dpi = 300)
+```
+
+```{r Export-Summary-Table, include=FALSE}
+
+# Convert the existing gtsummary table into LaTeX format
+Summary_Table_LaTeX <- gtsummary::as_kable_extra(
+  Summary_Table,
+  format = "latex",
+  booktabs = TRUE)
+
+# Save the LaTeX table as a separate file
+writeLines(
+  as.character(Summary_Table_LaTeX),
+  "figures/Table1_Summary.tex")
+```
+
+```{r, message = FLASE}
+#Various Calculations
+CombinedData %>%
+  filter(GENE %in% c("JAM2", "PRICKLE2", "WIPI2")) %>%
+  group_by(BMI_category, preg_preeclampsia) %>%
+  summarise(mean(gene_expression))
+
+CombinedData %>%
+  filter(GENE %in% c("JAM2", "PRICKLE2", "WIPI2")) %>%
+  group_by(BMI_category, preg_preeclampsia) %>%
+  summarise(median(gene_expression))
+
+CombinedData %>%
+  filter(GENE %in% c("JAM2", "PRICKLE2", "WIPI2")) %>%
+  group_by(GENE) %>%
+  summarise(mean(gene_expression))
+
+CombinedData %>%
+  filter(GENE %in% c("JAM2", "PRICKLE2", "WIPI2")) %>%
+  group_by(GENE) %>%
+  summarise(median(gene_expression))
+
 ```
